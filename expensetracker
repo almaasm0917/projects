@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Expense Tracker with Budget Control</title>
+
+<!-- Bootstrap 5 CSS -->
+<link
+  href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+  rel="stylesheet"
+/>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+  body {
+    padding-top: 20px;
+  }
+  #dashboard, #track-expense-page, #view-expenses-page, #budget-page {
+    display: none;
+  }
+  #alerts {
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1 class="mb-4">Expense Tracker & Budget Control</h1>
+
+  <!-- Login/Register -->
+  <div id="login-register" class="mb-4">
+    <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#loginModal">Login</button>
+    <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#registerModal">Register</button>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard">
+    <h2>Welcome, <span id="user-name"></span>!</h2>
+    <div class="mb-3">
+      <button id="btn-track-expense" class="btn btn-success me-2">Add Expense</button>
+      <button id="btn-view-expenses" class="btn btn-info me-2">View Expenses</button>
+      <button id="btn-budget" class="btn btn-warning">Manage Budgets</button>
+      <button id="btn-logout" class="btn btn-danger float-end">Logout</button>
+    </div>
+    <canvas id="expenseChart" style="max-width:600px;"></canvas>
+    <div id="alerts"></div>
+  </div>
+
+  <!-- Add Expense Page -->
+  <div id="track-expense-page">
+    <h2>Add Expense</h2>
+    <form id="expense-form">
+      <div class="mb-3">
+        <label for="expense-date" class="form-label">Date</label>
+        <input type="date" id="expense-date" class="form-control" required />
+      </div>
+      <div class="mb-3">
+        <label for="expense-category" class="form-label">Category</label>
+        <select id="expense-category" class="form-select" required>
+          <option value="">Select category</option>
+          <option>Food</option>
+          <option>Transportation</option>
+          <option>Housing</option>
+          <option>Entertainment</option>
+          <option>Health</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label for="expense-amount" class="form-label">Amount ($)</label>
+        <input type="number" min="0.01" step="0.01" id="expense-amount" class="form-control" required />
+      </div>
+      <div class="mb-3">
+        <label for="expense-desc" class="form-label">Description (optional)</label>
+        <input type="text" id="expense-desc" class="form-control" maxlength="100" />
+      </div>
+      <button type="submit" class="btn btn-primary me-2">Save Expense</button>
+      <button type="button" class="btn btn-secondary" id="cancel-expense">Cancel</button>
+    </form>
+  </div>
+
+  <!-- View Expenses Page -->
+  <div id="view-expenses-page">
+    <h2>Your Expenses</h2>
+    <button class="btn btn-secondary mb-3" id="back-to-dashboard">Back to Dashboard</button>
+    <div class="mb-3 row g-2">
+      <div class="col-md-4">
+        <label for="filter-start" class="form-label">Start Date</label>
+        <input type="date" id="filter-start" class="form-control" />
+      </div>
+      <div class="col-md-4">
+        <label for="filter-end" class="form-label">End Date</label>
+        <input type="date" id="filter-end" class="form-control" />
+      </div>
+      <div class="col-md-4">
+        <label for="filter-category" class="form-label">Category</label>
+        <select id="filter-category" class="form-select">
+          <option value="">All Categories</option>
+          <option>Food</option>
+          <option>Transportation</option>
+          <option>Housing</option>
+          <option>Entertainment</option>
+          <option>Health</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary mb-3" id="apply-filters">Apply Filters</button>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Date</th><th>Category</th><th>Description</th><th>Amount ($)</th>
+        </tr>
+      </thead>
+      <tbody id="expenses-table-body"></tbody>
+    </table>
+  </div>
+
+  <!-- Budget Management Page -->
+  <div id="budget-page">
+    <h2>Manage Budgets</h2>
+    <button class="btn btn-secondary mb-3" id="back-from-budget">Back to Dashboard</button>
+    <form id="budget-form">
+      <table class="table">
+        <thead><tr><th>Category</th><th>Monthly Budget ($)</th></tr></thead>
+        <tbody>
+          <tr><td>Food</td><td><input type="number" min="0" step="1" class="budget-input" data-category="Food" /></td></tr>
+          <tr><td>Transportation</td><td><input type="number" min="0" step="1" class="budget-input" data-category="Transportation" /></td></tr>
+          <tr><td>Housing</td><td><input type="number" min="0" step="1" class="budget-input" data-category="Housing" /></td></tr>
+          <tr><td>Entertainment</td><td><input type="number" min="0" step="1" class="budget-input" data-category="Entertainment" /></td></tr>
+          <tr><td>Health</td><td><input type="number" min="0" step="1" class="budget-input" data-category="Health" /></td></tr>
+          <tr><td>Other</td><td><input type="number" min="0" step="1" class="budget-input" data-category="Other" /></td></tr>
+        </tbody>
+      </table>
+      <button type="submit" class="btn btn-primary">Save Budgets</button>
+    </form>
+  </div>
+</div>
+
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form class="modal-content" id="login-form">
+      <div class="modal-header">
+        <h5 class="modal-title" id="loginModalLabel">Login</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+          <div class="mb-3">
+            <label for="login-username" class="form-label">Username</label>
+            <input type="text" id="login-username" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label for="login-password" class="form-label">Password</label>
+            <input type="password" id="login-password" class="form-control" required />
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Login</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Register Modal -->
+<div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form class="modal-content" id="register-form">
+      <div class="modal-header">
+        <h5 class="modal-title" id="registerModalLabel">Register</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+          <div class="mb-3">
+            <label for="register-username" class="form-label">Username</label>
+            <input type="text" id="register-username" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label for="register-password" class="form-label">Password</label>
+            <input type="password" id="register-password" class="form-control" required />
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Register</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Bootstrap Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+(() => {
+  // State
+  let users = JSON.parse(localStorage.getItem('users')) || {};
+  let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+  let budgets = JSON.parse(localStorage.getItem('budgets')) || {}; // user -> {category: amount}
+  let currentUser = null;
+  let expenseChart = null;
+
+  // Elements
+  const loginRegisterDiv = document.getElementById('login-register');
+  const dashboardDiv = document.getElementById('dashboard');
+  const trackExpensePage = document.getElementById('track-expense-page');
+  const viewExpensesPage = document.getElementById('view-expenses-page');
+  const budgetPage = document.getElementById('budget-page');
+  const alertsDiv = document.getElementById('alerts');
+  const userNameSpan = document.getElementById('user-name');
+
+  // Show / Hide helpers
+  function showSection(section) {
+    [loginRegisterDiv, dashboardDiv, trackExpensePage, viewExpensesPage, budgetPage].forEach(div => {
+      div.style.display = div === section ? 'block' : 'none';
+    });
+  }
+
+  // Save data helpers
+  function saveUsers() {
+    localStorage.setItem('users', JSON.stringify(users));
+  }
+  function saveExpenses() {
+    localStorage.setItem('expenses', JSON.stringify(expenses));
+  }
+  function saveBudgets() {
+    localStorage.setItem('budgets', JSON.stringify(budgets));
+  }
+
+  // Register form
+  document.getElementById('register-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const username = document.getElementById('register-username').value.trim();
+    const password = document.getElementById('register-password').value;
+    if (users[username]) {
+      alert('Username already exists!');
+      return;
+    }
+    users[username] = password;
+    saveUsers();
+    alert('Registration successful! Please login.');
+    const registerModal = bootstrap.Modal.getInstance(document.getElementById('registerModal'));
+    registerModal.hide();
+  });
+
+  // Login form
+  document.getElementById('login-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (users[username] && users[username] === password) {
+      currentUser = username;
+      userNameSpan.textContent = currentUser;
+      showSection(dashboardDiv);
+      loadBudgetsToInputs();
+      renderChart();
+      const loginModal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+      loginModal.hide();
+      loginRegisterDiv.style.display = 'none';
+    } else {
+      alert('Invalid username or password!');
+    }
+  });
+
+  // Logout button
+  document.getElementById('btn-logout').addEventListener('click', () => {
+    currentUser = null;
+    loginRegisterDiv.style.display = 'block';
+    showSection(loginRegisterDiv);
+  });
+
+  // Navigation buttons
+  document.getElementById('btn-track-expense').addEventListener('click', () => {
+    resetExpenseForm();
+    showSection(trackExpensePage);
+  });
+
+  document.getElementById('cancel-expense').addEventListener('click', () => {
+    showSection(dashboardDiv);
+  });
+
+  document.getElementById('btn-view-expenses').addEventListener('click', () => {
+    showSection(viewExpensesPage);
+    loadExpensesTable();
+  });
+
+  document.getElementById('back-to-dashboard').addEventListener('click', () => {
+    showSection(dashboardDiv);
+  });
+
+  document.getElementById('btn-budget').addEventListener('click', () => {
+    loadBudgetsToInputs();
+    showSection(budgetPage);
+  });
+
+  document.getElementById('back-from-budget').addEventListener('click', () => {
+    showSection(dashboardDiv);
+    renderChart();
+  });
+
+  // Expense form submit
+  document.getElementById('expense-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const date = document.getElementById('expense-date').value;
+    const category = document.getElementById('expense-category').value;
+    const amount = parseFloat(document.getElementById('expense-amount').value);
+    const description = document.getElementById('expense-desc').value.trim();
+
+    if (!date || !category || !amount || amount <= 0) {
+      alert('Please fill all fields correctly.');
+      return;
+    }
+
+    expenses.push({ user: currentUser, date, category, amount, description });
+    saveExpenses();
+    showSection(dashboardDiv);
+    renderChart();
+    checkBudgetAlerts();
+  });
+
+  // Load expenses table
+  function loadExpensesTable(filters = {}) {
+    const tbody = document.getElementById('expenses-table-body');
+    tbody.innerHTML = '';
+    const start = filters.startDate ? new Date(filters.startDate) : null;
+    const end = filters.endDate ? new Date(filters.endDate) : null;
+    const catFilter = filters.category || '';
+
+    let filtered = expenses.filter(exp => exp.user === currentUser);
+
+    if (start) filtered = filtered.filter(e => new Date(e.date) >= start);
+    if (end) filtered = filtered.filter(e => new Date(e.date) <= end);
+    if (catFilter) filtered = filtered.filter(e => e.category === catFilter);
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4">No expenses found.</td></tr>';
+      return;
+    }
+
+    filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    for (const e of filtered) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${e.date}</td>
+        <td>${e.category}</td>
+        <td>${e.description || ''}</td>
+        <td>${e.amount.toFixed(2)}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  // Filter expenses table button
+  document.getElementById('apply-filters').addEventListener('click', () => {
+    const startDate = document.getElementById('filter-start').value;
+    const endDate = document.getElementById('filter-end').value;
+    const category = document.getElementById('filter-category').value;
+    loadExpensesTable({ startDate, endDate, category });
+  });
+
+  // Budget form submit
+  document.getElementById('budget-form').addEventListener('submit', e => {
+    e.preventDefault();
+    if (!budgets[currentUser]) budgets[currentUser] = {};
+
+    document.querySelectorAll('.budget-input').forEach(input => {
+      const cat = input.dataset.category;
+      const val = parseFloat(input.value);
+      budgets[currentUser][cat] = isNaN(val) ? 0 : val;
+    });
+
+    saveBudgets();
+    alert('Budgets saved!');
+    showSection(dashboardDiv);
+    renderChart();
+    checkBudgetAlerts();
+  });
+
+  // Load budgets into inputs
+  function loadBudgetsToInputs() {
+    if (!budgets[currentUser]) budgets[currentUser] = {};
+    document.querySelectorAll('.budget-input').forEach(input => {
+      const cat = input.dataset.category;
+      input.value = budgets[currentUser][cat] || '';
+    });
+  }
+
+  // Reset expense form
+  function resetExpenseForm() {
+    document.getElementById('expense-form').reset();
+  }
+
+  // Render Chart (monthly total per category)
+  function renderChart() {
+    if (!currentUser) return;
+
+    // Get this month's expenses per category
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const catTotals = {};
+    for (const cat of ['Food', 'Transportation', 'Housing', 'Entertainment', 'Health', 'Other']) {
+      catTotals[cat] = 0;
+    }
+
+    expenses.forEach(exp => {
+      if (exp.user === currentUser) {
+        const d = new Date(exp.date);
+        if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+                    catTotals[exp.category] += exp.amount;
+        }
+      }
+    });
+
+    const ctx = document.getElementById('expenseChart').getContext('2d');
+
+    // If chart exists, destroy it before creating a new one
+    if (expenseChart) {
+      expenseChart.destroy();
+    }
+
+    expenseChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(catTotals),
+        datasets: [{
+          label: 'Expenses This Month ($)',
+          data: Object.values(catTotals),
+          backgroundColor: [
+            'rgba(255, 99, 132, 0.6)',
+            'rgba(54, 162, 235, 0.6)',
+            'rgba(255, 206, 86, 0.6)',
+            'rgba(75, 192, 192, 0.6)',
+            'rgba(153, 102, 255, 0.6)',
+            'rgba(255, 159, 64, 0.6)'
+          ],
+          borderColor: [
+            'rgba(255, 99, 132, 1)',
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)'
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+
+    checkBudgetAlerts();
+  }
+
+  // Check if expenses exceed or near budgets and show alerts
+  function checkBudgetAlerts() {
+    alertsDiv.innerHTML = '';
+
+    if (!budgets[currentUser]) return;
+
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Calculate monthly totals per category
+    const monthlyTotals = {};
+    for (const cat of Object.keys(budgets[currentUser])) {
+      monthlyTotals[cat] = 0;
+    }
+
+    expenses.forEach(exp => {
+      if (exp.user === currentUser) {
+        const d = new Date(exp.date);
+        if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+          monthlyTotals[exp.category] = (monthlyTotals[exp.category] || 0) + exp.amount;
+        }
+      }
+    });
+
+    // Check against budgets
+    for (const [cat, budgetAmt] of Object.entries(budgets[currentUser])) {
+      const spent = monthlyTotals[cat] || 0;
+      if (budgetAmt > 0) {
+        if (spent >= budgetAmt) {
+          showAlert(`🚨 You have exceeded your budget for <strong>${cat}</strong>. Spent: $${spent.toFixed(2)} / Budget: $${budgetAmt.toFixed(2)}`, 'danger');
+        } else if (spent >= budgetAmt * 0.8) {
+          showAlert(`⚠️ You are nearing your budget limit for <strong>${cat}</strong>. Spent: $${spent.toFixed(2)} / Budget: $${budgetAmt.toFixed(2)}`, 'warning');
+        }
+      }
+    }
+  }
+
+  function showAlert(message, type = 'info') {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    alert.innerHTML = message;
+    alertsDiv.appendChild(alert);
+  }
+
+  // On page load: show login/register
+  showSection(loginRegisterDiv);
+
+})();
+</script>
+
+</body>
+</html>
+
