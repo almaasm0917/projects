@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dice Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      margin-top: 40px;
+    }
+    .players {
+      display: flex;
+      justify-content: center;
+      gap: 50px;
+      margin: 30px 0;
+    }
+    .player {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      width: 200px;
+    }
+    .player img {
+      width: 100px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #winner {
+      color: green;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎲 Dice Game</h1>
+
+  <div class="players">
+    <div class="player" id="player1">
+      <h2>Player 1</h2>
+      <img id="dice1" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Dice-1-b.svg/120px-Dice-1-b.svg.png" alt="Dice 1" />
+      <p>Score: <span id="score1">0</span></p>
+      <button id="roll1">Roll</button>
+    </div>
+    <div class="player" id="player2">
+      <h2>Player 2</h2>
+      <img id="dice2" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Dice-1-b.svg/120px-Dice-1-b.svg.png" alt="Dice 2" />
+      <p>Score: <span id="score2">0</span></p>
+      <button id="roll2">Roll</button>
+    </div>
+  </div>
+
+  <h2 id="winner"></h2>
+  <button id="reset">Reset Game</button>
+
+  <script>
+    let score1 = 0;
+    let score2 = 0;
+    let currentPlayer = Math.random() < 0.5 ? 1 : 2;
+    const maxScore = 30;
+
+    const diceImages = [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Dice-1-b.svg/120px-Dice-1-b.svg.png",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Dice-2-b.svg/120px-Dice-2-b.svg.png",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Dice-3-b.svg/120px-Dice-3-b.svg.png",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Dice-4-b.svg/120px-Dice-4-b.svg.png",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Dice-5-b.svg/120px-Dice-5-b.svg.png",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/Dice-6-b.svg/120px-Dice-6-b.svg.png"
+    ];
+
+    document.getElementById("roll1").disabled = currentPlayer !== 1;
+    document.getElementById("roll2").disabled = currentPlayer !== 2;
+
+    function rollDice(player) {
+      const roll = Math.floor(Math.random() * 6) + 1;
+      document.getElementById(`dice${player}`).src = diceImages[roll - 1];
+
+      if (player === 1) {
+        score1 += roll;
+        document.getElementById("score1").textContent = score1;
+        document.getElementById("roll1").disabled = true;
+        document.getElementById("roll2").disabled = false;
+      } else {
+        score2 += roll;
+        document.getElementById("score2").textContent = score2;
+        document.getElementById("roll2").disabled = true;
+        document.getElementById("roll1").disabled = false;
+      }
+
+      checkWinner();
+    }
+
+    function checkWinner() {
+      if (score1 >= maxScore) {
+        document.getElementById("winner").textContent = "🎉 Player 1 Wins!";
+        endGame();
+      } else if (score2 >= maxScore) {
+        document.getElementById("winner").textContent = "🎉 Player 2 Wins!";
+        endGame();
+      }
+    }
+
+    function endGame() {
+      document.getElementById("roll1").disabled = true;
+      document.getElementById("roll2").disabled = true;
+    }
+
+    document.getElementById("roll1").addEventListener("click", () => rollDice(1));
+    document.getElementById("roll2").addEventListener("click", () => rollDice(2));
+    document.getElementById("reset").addEventListener("click", () => {
+      score1 = 0;
+      score2 = 0;
+      document.getElementById("score1").textContent = 0;
+      document.getElementById("score2").textContent = 0;
+      document.getElementById("winner").textContent = "";
+      currentPlayer = Math.random() < 0.5 ? 1 : 2;
+      document.getElementById("roll1").disabled = currentPlayer !== 1;
+      document.getElementById("roll2").disabled = currentPlayer !== 2;
+      document.getElementById("dice1").src = diceImages[0];
+      document.getElementById("dice2").src = diceImages[0];
+    });
+  </script>
+
+</body>
+</html>
